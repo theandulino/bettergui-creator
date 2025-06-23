@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BetterGUI Menü Creator mit Tabs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    
+       <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 20px;
+        background: #f4f4f4;
+      }
+
+      h1,
+      h2 {
+        color: #333;
+      }
+
+      input,
+      textarea,
+      button {
+        width: 100%;
+        margin: 5px 0 15px 0;
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #45a049;
+      }
+
+      .item {
+        background: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        position: relative;
+      }
+
+      .delete-button {
+        max-width: 50px;
+        background: #e53935;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .delete-button:hover {
+        background: #c62828;
+      }
+
+      #preview {
+        display: grid;
+        gap: 4px;
+        margin-top: 20px;
+      }
+
+      .slot {
+        width: 64px;
+        height: 64px;
+        background: #ddd;
+        border: 1px solid #aaa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-size: 12px;
+        text-align: center;
+        border-radius: 4px;
+        overflow: hidden;
+        flex-direction: column;
+        padding: 4px;
+        box-sizing: border-box;
+      }
+
+      .slot span {
+        position: absolute;
+        bottom: 2px;
+        left: 2px;
+        font-size: 10px;
+        color: #333;
+      }
+
+      .item-name {
+        font-weight: bold;
+        color: #009688;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+      }
+
+      .item-lore {
+        font-size: 10px;
+        color: #555;
+        line-height: 1.2;
+        overflow: hidden;
+        max-height: 2.4em;
+        text-overflow: ellipsis;
+      }
+
+      textarea {
+        background: #fefefe;
+      }
+
+      .item-image {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        margin-bottom: 5px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+
+      /* Tabs */
+      .tabs {
+        display: flex;
+        margin-bottom: 10px;
+        border-bottom: 2px solid #ccc;
+      }
+
+      .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+        user-select: none;
+        background: #ddd;
+        margin-right: 4px;
+        font-weight: bold;
+        color: #555;
+        transition: background 0.3s, color 0.3s;
+      }
+
+      .tab:hover {
+        background: #ccc;
+      }
+
+      .tab.active {
+        background: white;
+        border-color: #ccc #ccc white;
+        color: #000;
+        font-weight: 700;
+        border-bottom: 2px solid white;
+      }
+
+      .tab-content {
+        display: none;
+        background: white;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Tooltip */
+      .slot-tooltip {
+        display: none;
+        position: absolute;
+        top: -10px;
+        left: 70px;
+        background: rgba(30, 30, 30, 0.95);
+        color: white;
+        padding: 8px;
+        font-size: 12px;
+        line-height: 1.4;
+        border-radius: 4px;
+        max-width: 200px;
+        z-index: 10;
+        white-space: pre-wrap;
+        pointer-events: none;
+      }
+
+      .slot:hover .slot-tooltip {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('menuTab')">📋 Menü</div>
+      <div class="tab" onclick="showTab('itemsTab')">🧱 Items</div>
+      <div class="tab" onclick="showTab('generatorTab')">⚙️ Generator</div>
+    </div>
+
+    <div id="menuTab" class="tab-content active">
+      <h1>BetterGUI Menü Creator</h1>
+      <label>Menüname:</label>
+      <input id="menuName" placeholder="z.B. mainmenu" />
+      <label>Titel im Spiel:</label>
+      <input id="menuTitle" placeholder="z.B. &6Mein Menü" />
+      <label>Reihen (1–6):</label>
+      <input type="number" id="menuRows" min="1" max="6" value="3" />
+      <label>YAML-Datei importieren:</label>
+      <input type="file" id="yamlImport" accept=".yml,.yaml" />
+    </div>
+
+    <div id="itemsTab" class="tab-content">
+      <h2>Items</h2>
+      <div id="itemsContainer"></div>
+      <button onclick="addItem()">➕ Item hinzufügen</button>
+    </div>
+
+    <div id="generatorTab" class="tab-content">
+      <h2>YAML Output</h2>
+      <textarea id="output" rows="15" readonly></textarea>
+      <button onclick="generateYAML()">✅ YAML generieren + Vorschau</button>
+
+      <h2>Vorschau</h2>
+      <div id="preview"></div>
+    </div>
+
+    <!-- js-yaml für YAML-Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
+    <script>
+      const itemsContainer = document.getElementById("itemsContainer");
+      const output = document.getElementById("output");
+      const preview = document.getElementById("preview");
+
+      function addItem() {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <button class="delete-button" onclick="this.parentElement.remove()">✖</button><br>
+          <label>Slot (0–53):</label><input class="slot-input" type="number" min="0" max="53" />
+          <label>Material:</label><input class="material" placeholder="z.B. DIAMOND_SWORD" />
+          <label>Displayname:</label><input class="displayname" placeholder="z.B. &aMein Item" />
+          <label>Lore (\\n für Zeilenumbruch):</label><input class="lore" placeholder="z.B. Zeile 1\\nZeile 2" />
+          <label>Custom Model Data:</label><input class="modeldata" type="number" />
+          <label>Image URL (optional):</label><input class="imageurl" placeholder="https://..." />
+          <label>Left Click Commands:</label><textarea class="leftclick" rows="2"></textarea>
+          <label>Right Click Commands:</label><textarea class="rightclick" rows="2"></textarea>
+        `;
+        itemsContainer.appendChild(div);
+
+        const materialInput = div.querySelector(".material");
+        const imageUrlInput = div.querySelector(".imageurl");
+
+        materialInput.addEventListener("input", () => {
+          const mat = materialInput.value.trim().toLowerCase();
+          if (mat) {
+            const imageUrl = `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.5/assets/minecraft/textures/item/${mat}.png`;
+            imageUrlInput.value = imageUrl;
+          } else {
+            imageUrlInput.value = "";
+          }
+        });
+      }
+
+      function formatMinecraftColors(text) {
+        const colorCodes = {
+          0: "black", 1: "darkblue", 2: "darkgreen", 3: "darkcyan", 4: "darkred",
+          5: "darkmagenta", 6: "goldenrod", 7: "gray", 8: "darkgray", 9: "blue",
+          a: "green", b: "cyan", c: "red", d: "magenta", e: "yellow", f: "white"
+        };
+
+        return text.replace(/&([0-9a-f])/gi, (match, code) => {
+          const color = colorCodes[code.toLowerCase()] || "white";
+          return `</span><span style="color: ${color}">`;
+        }).replace(/^/, '<span>').concat('</span>');
+      }
+
+      function generateYAML() {
+        const name = document.getElementById("menuName").value || "menu";
+        const title = document.getElementById("menuTitle").value || "&6Menü";
+        const rows = parseInt(document.getElementById("menuRows").value) || 3;
+
+        let yaml = `${name}:
+  title: '${title}'
+  rows: ${rows}
+  items:
+`;
+
+        let slots = new Array(rows * 9).fill(null);
+        const items = itemsContainer.querySelectorAll(".item");
+        items.forEach((item, index) => {
+          const slot = parseInt(item.querySelector(".slot-input").value);
+          const material = item.querySelector(".material").value;
+          const displayname = item.querySelector(".displayname").value;
+          const loreRaw = item.querySelector(".lore").value;
+          const modeldata = item.querySelector(".modeldata").value;
+          const imageurl = item.querySelector(".imageurl").value;
+          const leftclick = item.querySelector(".leftclick").value;
+          const rightclick = item.querySelector(".rightclick").value;
+
+          const itemName = `item${index}`;
+          yaml += `    ${itemName}:\n`;
+          yaml += `      material: ${material}\n`;
+          yaml += `      display_name: '${displayname}'\n`;
+          if (loreRaw.trim()) {
+            const loreLines = loreRaw
+              .split("\\n")
+              .map((l) => `'${l.trim()}'`)
+              .join(", ");
+            yaml += `      lore: [${loreLines}]\n`;
+          }
+          if (modeldata) yaml += `      custom_model_data: ${modeldata}\n`;
+          yaml += `      slot: ${slot}\n`;
+          if (leftclick.trim()) {
+            yaml += `      left_click_commands:\n`;
+            leftclick.split("\n").forEach((line) => {
+              yaml += `        - '${line.trim()}'\n`;
+            });
+          }
+          if (rightclick.trim()) {
+            yaml += `      right_click_commands:\n`;
+            rightclick.split("\n").forEach((line) => {
+              yaml += `        - '${line.trim()}'\n`;
+            });
+          }
+
+          slots[slot] = {
+            name: displayname,
+            lore: loreRaw.split("\\n").map((l) => l.trim()),
+            image: imageurl,
+          };
+        });
+
+        output.value = yaml;
+        generatePreview(slots, rows);
+      }
+
+      function generatePreview(slots, rows) {
+        preview.innerHTML = "";
+        preview.style.gridTemplateColumns = `repeat(9, 64px)`;
+        for (let i = 0; i < rows * 9; i++) {
+          const slot = document.createElement("div");
+          slot.className = "slot";
+
+          if (slots[i]) {
+            slot.innerHTML = `
+              ${slots[i].image ? `<img src="${slots[i].image}" alt="" class="item-image" />` : ""}
+              <div class="item-name">${slots[i].name || ""}</div>
+              <div class="item-lore">${slots[i].lore.join("<br>")}</div>
+              <span>${i}</span>
+              <div class="slot-tooltip">
+                <div>${formatMinecraftColors(slots[i].name || "")}</div>
+                <div>${slots[i].lore.map(line => formatMinecraftColors(line)).join("<br>")}</div>
+              </div>
+            `;
+          } else {
+            slot.innerHTML = `<span>${i}</span>`;
+          }
+          preview.appendChild(slot);
+        }
+      }
+
+      function showTab(tabId) {
+        document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach((content) => content.classList.remove("active"));
+        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add("active");
+        document.getElementById(tabId).classList.add("active");
+      }
+
+      document.getElementById("yamlImport").addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          try {
+            const doc = jsyaml.load(event.target.result);
+            const menuKey = Object.keys(doc)[0];
+            const menu = doc[menuKey];
+
+            document.getElementById("menuName").value = menuKey;
+            document.getElementById("menuTitle").value = menu.title || "";
+            document.getElementById("menuRows").value = menu.rows || 3;
+
+            itemsContainer.innerHTML = "";
+
+            if (menu.items) {
+              Object.values(menu.items).forEach((itemData) => {
+                addItem();
+                const item = itemsContainer.lastChild;
+
+                item.querySelector(".slot-input").value = itemData.slot || 0;
+                item.querySelector(".material").value = itemData.material || "";
+                item.querySelector(".displayname").value = itemData.display_name || "";
+                item.querySelector(".lore").value = (itemData.lore || []).join("\\n");
+                item.querySelector(".modeldata").value = itemData.custom_model_data || "";
+
+                const imageurl = item.querySelector(".imageurl");
+                if (itemData.material) {
+                  const mat = itemData.material.trim().toLowerCase();
+                  imageurl.value = `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.5/assets/minecraft/textures/item/${mat}.png`;
+                }
+
+                if (Array.isArray(itemData.left_click_commands)) {
+                  item.querySelector(".leftclick").value = itemData.left_click_commands.join("\n");
+                }
+                if (Array.isArray(itemData.right_click_commands)) {
+                  item.querySelector(".rightclick").value = itemData.right_click_commands.join("\n");
+                }
+              });
+            }
+
+            alert("YAML erfolgreich importiert!");
+          } catch (error) {
+            alert("Fehler beim Parsen der YAML-Datei: " + error.message);
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      addItem();
+    </script>
+  </body>
+</html>
